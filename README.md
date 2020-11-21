@@ -2,7 +2,7 @@
 
 Six Group of delayed neutron precursors implemented
 
-It hence deal with a stiff problem due to the differences in evolution time scale between prompt and delayed neutron.
+It hence deal with a stiff problem due to the differences in evolution time scale between prompt and delayed neutron. For this purpose the method to be chosen is a bdf of order 15 and the choice of the solver is zvode.
 ________________________________________________________________________________
 #  MAIN Files Index
 
