@@ -9,56 +9,59 @@ from KINmodule import *
 
 # time discretizzation
 t0 = 0
-tf = 30
+tf = 120
 dt = 0.05 # [s]
 N   = round((tf-t0)/dt)+1
 t = np.array(range(N))*dt+t0
-
+# time index pointer
+p = np.array([0])
+# reactivity function init
+r = np.array([0.0 for ii in range(N)])
 # data loading
 [u0, L, l, b] = dataBuilder()
 
-# initializing matrix A: statedot system matrix (input dependent)
+# initializing matrix A: KINdot system matrix (input dependent)
 tmp = [[0.0 for i in range(7)] for j in range(7)]  # temporary array
 A = np.array(tmp)
 # constant part of matrix A
+A[0, :] = np.append(np.array(0.0), l)
 for i in range(6):
     A[(i + 1), 0] = b[i] / L
     A[(i + 1), (i + 1)] = -l[i]
-# set the STATEDOT parameters (see KINmodule)
-# REACTIVITY FUNCTION CHOICE HERE (first argument of param)
-param = [rho_step, L, l, b,A]
+# set the KINdot parameters (see KINmodule)
+param = [r, L, b, A, p]
 
 ######################################################################
 # problem solution ###################################################
 
 # SOLUTION initializzation
-ts = []
-sol = []
+sol = [u0]
 # SOLUTOR parameters (same solutor as MATLAB ode15s )
-ode15s = ode(statedot)
+solver = ode(KINdot)
 # max step limitation necessary
-ode15s.set_integrator('zvode', method='bdf', order=15, max_step=dt / 7)
+solver.set_integrator('lsoda',max_step = dt/7)
 # setting initial values and reactivity input function
-ode15s.set_initial_value(u0, t=0.0).set_f_params(param)
+solver.set_initial_value(u0, t=t0).set_f_params(param)
 # (DN is the number of steps between two message)
 DN = 100
 nsteps = DN
-ii = 1
 print('------------------------------')
 # SOLVE THE PROBLEM
-while ode15s.successful() and ode15s.t < tf:
+for ii in range(0,N-1):
     # this tells us how many steps have been performed
     if (ii / nsteps == 1):
         print('------------------------------')
-        print(str(nsteps), ' steps performed')
+        print(str(nsteps), ' steps performed out of ',str(N-1))
         nsteps = nsteps + DN
         print('------------------------------')
-    # stepwise
-    ode15s.integrate(ode15s.t + dt)
-    # loading
-    ts.append(ode15s.t)
-    sol.append(np.real(ode15s.y.copy()))
-    ii = ii+1
+    if solver.successful() and solver.t < tf:
+        p[0] = ii+1 # begin from time-step 1 (time-step 0 -> initial cond.)
+        # loading the reactivity
+        r[p[0]] = rho_step(t[p[0]])
+        # stepwise
+        solver.integrate(t[p[0]])
+        # loading the solution
+        sol.append(np.real(solver.y.copy()))
 print('------------------------------')
 print('Simulation Completed')
 print('------------------------------')
@@ -66,7 +69,6 @@ print('------------------------------')
 
 ######################################################################
 # postprocessing #####################################################
-t = np.array(ts)
 sol = np.array(sol)
 n = sol[:, 0]
 c1 = sol[:, 1]
@@ -108,4 +110,3 @@ with open(solFileName, 'w') as solFile:
   rowNum = 0
   writer.writerow(['Time [s]', 'n Density [1/cm3]', 'Group 1 Precursor Density [1/cm3]  ','Group 2','Group 3','Group 4','Group 5','Group 6'])
   writer.writerows([[t[jj],n[jj],c1[jj],c2[jj],c3[jj],c4[jj],c5[jj],c6[jj]] for jj in range(len(t))])
-  

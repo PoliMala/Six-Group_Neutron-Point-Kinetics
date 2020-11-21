@@ -11,7 +11,7 @@ def dataBuilder(n0=1):
   return (u0, L, l, b)
 
 # neutron kinetics six group equations system function definition
-def statedot(t, x, param):
+def KINdot(t, x, param):
   # Funcion: x_dot = fun(t,x,param) that returns the first derivative of
   # the system x evaluated at time t given the following param structure
   # param = [ [reactivity (callable)],
@@ -20,19 +20,17 @@ def statedot(t, x, param):
   #           [six group resp. fractions (array)]     ]
   r = param[0]
   L = param[1]
-  l = param[2]
-  b = param[3]
-  A = param[4]
-
+  b = param[2]
+  A = param[3]
+  p = param[-1]
   # computing A at time t
-  A[0, :] = np.append(np.array((r(t) - b.sum()) / L), l)
+  A[0][0] = (r[p[0]] - b.sum())/L
   # initialize the x derivative at time t
-  tmp = [0.0 for i in range(7)]  # temporary array
-  x_dot = np.array(tmp)
+  xdot = np.array([0.0 for ii in range(7)])
   # computing the x derivative at time t
   for i in range(7):
-    x_dot[i] = np.dot(A[i, :], np.real(x.transpose()))
-  return (x_dot)
+    xdot[i] = np.dot(A[i, :], np.real(x.transpose()))
+  return (xdot)
 
 
 ########################################################################
