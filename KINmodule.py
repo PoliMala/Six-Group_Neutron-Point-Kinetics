@@ -1,11 +1,12 @@
 import numpy as np
 
 # neutron kinetics data upload function definition
-def dataBuilder(n0=1):
+def dataBuilder(n0=1.0,b0=6.5e-3,fj=[0.033,0.219,0.196,0.395,0.115,0.042],\
+                lj=[0.0124,0.0305,0.111,0.301,1.14,3.01],L0=1e-5):
   # Problem parameter and initial condition dataBuilder
-  b = 6.5e-3 * np.array([0.033, 0.219, 0.196, 0.395, 0.115, 0.042])
-  l = np.array([0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01])
-  L = np.array([1e-5])
+  b = b0 * np.array(fj)
+  l = np.array(lj)
+  L = np.array([L0])
   c0 = b / (l * L) * n0
   u0 = np.append(np.array([n0]), c0)
   return (u0, L, l, b)
