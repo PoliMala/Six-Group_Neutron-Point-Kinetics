@@ -1,3 +1,5 @@
+
+# LIBRARY IMPORT ###############################################################
 import numpy as np
 from scipy.integrate import ode
 import os
@@ -5,19 +7,25 @@ import os
 os.environ['MPLCONFIGDIR'] = '/tmp'
 import matplotlib.pyplot as plt
 import csv
-from KINmodule import *
 
-# time discretizzation
+from KINmodule import * 
+###############################################################################
+
+# TIME DISCRETIZZATION ########################################################
 t0 = 0
 tf = 120
 dt = 0.05 # [s]
 N   = round((tf-t0)/dt)+1
 t = np.array(range(N))*dt+t0
+
 # time index pointer
 p = np.array([0])
+
 # reactivity function init
 r = np.array([0.0 for ii in range(N)])
-# data loading
+##############################################################################
+
+# DATA LOADING ################################################################
 [u0, L, l, b] = dataBuilder()
 
 # initializing matrix A: KINdot system matrix (input dependent)
@@ -32,20 +40,27 @@ for i in range(6):
 param = [r, L, b, A, p]
 
 ######################################################################
-# problem solution ###################################################
+
+# PROBLEM SOLUTION  ###################################################
 
 # SOLUTION initializzation
 sol = [u0]
+
 # SOLUTOR parameters (same solutor as MATLAB ode15s )
 solver = ode(KINdot)
+
 # max step limitation necessary
 solver.set_integrator('lsoda',max_step = dt/7)
+
 # setting initial values and reactivity input function
 solver.set_initial_value(u0, t=t0).set_f_params(param)
+
 # (DN is the number of steps between two message)
 DN = 100
 nsteps = DN
+
 print('------------------------------')
+
 # SOLVE THE PROBLEM
 for ii in range(0,N-1):
     # this tells us how many steps have been performed
@@ -62,13 +77,15 @@ for ii in range(0,N-1):
         solver.integrate(t[p[0]])
         # loading the solution
         sol.append(np.real(solver.y.copy()))
+
 print('------------------------------')
 print('Simulation Completed')
 print('------------------------------')
 print('------------------------------')
 
 ######################################################################
-# postprocessing #####################################################
+
+# POSTPROCESSING #####################################################
 sol = np.array(sol)
 n = sol[:, 0]
 c1 = sol[:, 1]
