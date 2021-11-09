@@ -11,33 +11,52 @@ import os
 os.environ['MPLCONFIGDIR'] = '/tmp'
 
 def main(argv):
-    #################### DEFAULT TIME DISCRETIZZATION [s] #####################
+    ############################## DEFAULT OPTIONS ############################
+    # data
+    [u0, L, l, b] = dataBuilder()
+    # time discretizzation
     t0 = 0.0
-    tf = 10.0
-    dt = 0.5
+    tf = 100.0
+    dt = 0.005
+    # source strenght
+    q = 0
+    # plots
+    PLOT = True
+    # output Files
+    OUT = False
     try: ############ CHECK THE CORRECT PROGRAM USAGE #########################
-        opts, args = gop.getopt(argv,'d:t:h',['data','time'])
+        opts, args = gop.getopt(argv,'d:t:p:o:q:h',['data','time','plot','out','source'])
     except gop.GetoptError:
             print('usage: main.py -i <inputfile>')
             sys.exit(2)
     ########################### ARGUMENT PARSING ##############################
     for opt, arg in opts:
         if opt == '-h':
+    ######################## TIME DISCRETIZZATION #############################
             print('usage: python -opt <value> main.py\n\
 the options are ...\n\n')
             sys.exit()
-        elif opt in ('-d','--data'):
     ############################## DATA LOADING ###############################
+        elif opt in ('-d','--data'):
             if arg == "TRIGA":
                 [u0, L, l, b] = dataBuilder(1.0,7.3e-3)
             else:
                 [u0, L, l, b] = dataBuilder()
-        elif opt in ('-t','--time'):
+    ############################## PLOT OPTION ################################
+        elif opt in ('-p','--plot'):
+            PLOT = (arg=='1')
+    ########################### OUTPUT CSV OPTION #############################
+        elif opt in ('-o','--out'):
+            q = float(arg)
+    ########################### OUTPUT CSV OPTION #############################
+        elif opt in ('-q','--source'):
+            OUT = (arg=='1')
     ######################## TIME DISCRETIZZATION #############################
-            t0 = float(input("\n\tInsert the initial time [s]\t\t > "))
-            tf = float(input("\n\tInsert the final time [s]\t\t > "))
-            dt = float(input("\n\tInsert the time discretizzation [s]\t > "))
-            print("\n")
+        elif opt=='-t':
+            topt = split(arg)
+            t0 = float(topt[0])
+            tf = float(topt[1])
+            dt = float(topt[2])
     ########################### INITIALIZZATION ###############################
     N   = round((tf-t0)/dt)+1
     t = np.array(range(N))*dt+t0
@@ -54,7 +73,7 @@ the options are ...\n\n')
         A[(i + 1), 0] = b[i] / L
         A[(i + 1), (i + 1)] = -l[i]
     # set the KINdot parameters (see KINmodule)
-    param = [r, L, b, A, p]
+    param = [r, L, b, A, q, p]
     ######################## PROBLEM RESOLUTION ###############################
     # SOLUTION initializzation
     sol = [u0]
@@ -66,7 +85,7 @@ the options are ...\n\n')
     # setting initial values and reactivity input function
     solver.set_initial_value(u0, t=t0).set_f_params(param)
     # (DN is the number of steps between two message)
-    DN = 100
+    DN = int(N/5)
     nsteps = DN
     print('===================================================================')
     # SOLVE THE PROBLEM
@@ -85,40 +104,41 @@ the options are ...\n\n')
             solver.integrate(t[p[0]])
             # loading the solution
             sol.append(np.real(solver.y.copy()))
-    # postprocessing #####################################################
-    sol = np.array(sol)
-    # neutron population and precursors concentration extraction
-    n = sol[:, 0]
-    c1 = sol[:, 1]
-    c2 = sol[:, 2]
-    c3 = sol[:, 3]
-    c4 = sol[:, 4]
-    c5 = sol[:, 5]
-    c6 = sol[:, 6]
-    # Neutron population plot
-    plt.figure(1)
-    plt.plot(t, n)
-    plt.xlabel("Time [s]")
-    plt.ylabel("Population Density [1/cm]")
-    plt.title("Neutron concentration")
-    plt.grid()
-    plt.savefig('../KINnt.png')
-    # Delayed group plot
-    plt.figure(2)
-    plt.plot(t, c1)
-    plt.plot(t, c2)
-    plt.plot(t, c3)
-    plt.plot(t, c4)
-    plt.plot(t, c5)
-    plt.plot(t, c6)
-    plt.legend(["Group 1", "Group 2", "Group 3", "Group 4", "Group 5", "Group 6"])
-    plt.xlabel("Time [s]")
-    plt.ylabel("Population Density [1/cm]")
-    plt.title("Precursor Groups concentration")
-    plt.grid()
-    plt.savefig('../KINct.png')
-    # to show all figures
-    #plt.show()
+    if PLOT:
+        # postprocessing #####################################################
+        sol = np.array(sol)
+        # neutron population and precursors concentration extraction
+        n = sol[:, 0]
+        c1 = sol[:, 1]
+        c2 = sol[:, 2]
+        c3 = sol[:, 3]
+        c4 = sol[:, 4]
+        c5 = sol[:, 5]
+        c6 = sol[:, 6]
+        # Neutron population plot
+        plt.figure(1)
+        plt.plot(t, n)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Population Density [1/cm]")
+        plt.title("Neutron concentration")
+        plt.grid()
+        plt.savefig('../KINnt.png')
+        # Delayed group plot
+        plt.figure(2)
+        plt.plot(t, c1)
+        plt.plot(t, c2)
+        plt.plot(t, c3)
+        plt.plot(t, c4)
+        plt.plot(t, c5)
+        plt.plot(t, c6)
+        plt.legend(["Group 1", "Group 2", "Group 3", "Group 4", "Group 5", "Group 6"])
+        plt.xlabel("Time [s]")
+        plt.ylabel("Population Density [1/cm]")
+        plt.title("Precursor Groups concentration")
+        plt.grid()
+        plt.savefig('../KINct.png')
+        # to show all figures
+        #plt.show()
     # save a csv file
     solFileName = "../KINsol.csv"
     with open(solFileName, 'w') as solFile:
