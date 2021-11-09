@@ -40,21 +40,21 @@ def KINdot(t, x, param):
 # Reactivity input function definition #################################
 
 # step function
-def rho_step(t, t0=0, r=65e-5):
+def rho_step(t, r=65e-5, t0=0):
     if t>t0:
         return r  #65e-5
     else:
         return 0
 
 # ramp function
-def rho_ramp(t, t0=0, rt=65e-6):
+def rho_ramp(t, rt=65e-6, t0=0):
     if t>t0:
         return rt*(t-t0)
     else:
         return 0
 
 # single square wave function (time period DTS)
-def rho_sqWave(t, t0=0, DTS=10, r=650e-6):
+def rho_sqWave(t, r=650e-6, t0=0, DTS=10):
     # reactivity function, to be defined in ppm
     if t > t0 and t < DTS:
         return r
@@ -63,5 +63,5 @@ def rho_sqWave(t, t0=0, DTS=10, r=650e-6):
 
 
 # periodic harmonic function
-def rho_harm(t, t0=0, T=1, r=650e-6):
+def rho_harm(t, r=650e-6, t0=0, T=1):
     return r * np.sin((t-t0)*2*np.pi/T)
