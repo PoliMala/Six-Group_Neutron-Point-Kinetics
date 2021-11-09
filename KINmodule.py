@@ -23,6 +23,7 @@ def KINdot(t, x, param):
   L = param[1]
   b = param[2]
   A = param[3]
+  q = param[4]
   p = param[-1]
   # computing A at time t
   A[0][0] = (r[p[0]] - b.sum())/L
@@ -31,6 +32,7 @@ def KINdot(t, x, param):
   # computing the x derivative at time t
   for i in range(7):
     xdot[i] = np.dot(A[i, :], np.real(x.transpose()))
+  xdot[1] = xdot[1]+q
   return (xdot)
 
 
