@@ -20,22 +20,25 @@ def main(argv):
     dt = 0.005
     # source strenght
     q = 0
+    # reactivity function
+    rho_fun = rho_step
     # plots
     PLOT = True
     # output Files
     OUT = False
     try: ############ CHECK THE CORRECT PROGRAM USAGE #########################
-        opts, args = gop.getopt(argv,'d:t:p:o:q:h',['data','time','plot','out','source'])
+        opts, args = gop.getopt(argv,'d:t:p:o:q:r:h',['data','time','plot',\
+        'out','source','reac'])
     except gop.GetoptError:
             print('usage: main.py -i <inputfile>')
-            sys.exit(2)
+            sys.exit(1)
     ########################### ARGUMENT PARSING ##############################
     for opt, arg in opts:
         if opt == '-h':
     ######################## TIME DISCRETIZZATION #############################
             print('usage: python -opt <value> main.py\n\
 the options are ...\n\n')
-            sys.exit()
+            sys.exit(0)
     ############################## DATA LOADING ###############################
         elif opt in ('-d','--data'):
             if arg == "TRIGA":
@@ -45,15 +48,40 @@ the options are ...\n\n')
     ############################## PLOT OPTION ################################
         elif opt in ('-p','--plot'):
             PLOT = (arg=='1')
-    ########################### OUTPUT CSV OPTION #############################
+    ########################### SOURCE TERM OPTION ############################
         elif opt in ('-o','--out'):
             q = float(arg)
     ########################### OUTPUT CSV OPTION #############################
         elif opt in ('-q','--source'):
             OUT = (arg=='1')
+    ##################### REACTIVITY FUNCTION SELECTION #######################
+        elif opt in ('-r','--reac'):
+            ropt = arg.split()
+            if ropt[0] == 'step':
+                ti = float(ropt[1])
+                r0 = float(ropt[2])
+                def rho_fun(t):
+                    return rho_step(t,ti,r0)
+            if ropt[0] == 'ramp':
+                ti = float(ropt[1])
+                rt = float(ropt[2])
+                def rho_fun(t):
+                    return rho_ramp(t,ti,rt)
+            elif ropt[0] == 'harm':
+                ti = float(ropt[1])
+                T  = float(ropt[2])
+                r0 = float(ropt[3])
+                def rho_fun(t):
+                    return rho_harm(t,ti,T,r0)
+            elif ropt[0] == 'sqW':
+                ti = float(ropt[1])
+                DT = float(ropt[2])
+                r0 = float(ropt[3])
+                def rho_fun(t):
+                    return rho_sqWave(t,ti,DT,r0)
     ######################## TIME DISCRETIZZATION #############################
-        elif opt=='-t':
-            topt = split(arg)
+        elif opt in ('-t','--time'):
+            topt = arg.split()
             t0 = float(topt[0])
             tf = float(topt[1])
             dt = float(topt[2])
@@ -99,7 +127,7 @@ the options are ...\n\n')
         if solver.successful() and solver.t < tf:
             p[0] = ii+1 # begin from time-step 1 (time-step 0 -> initial cond.)
             # loading the reactivity
-            r[p[0]] = rho_step(t[p[0]])
+            r[p[0]] = rho_fun(t[p[0]])
             # stepwise
             solver.integrate(t[p[0]])
             # loading the solution
